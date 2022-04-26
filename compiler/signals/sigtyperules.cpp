@@ -62,7 +62,7 @@ static Type infereWaveformType(Tree lv, Tree env);
 
 TupletType derefRecCert(Type t);
 
-static interval arithmetic(int opcode, const interval& x, const interval& y);
+static interval arithmetic(int opcode, const interval& x, const interval& y, int n1,  int n2);
 
 // Uncomment to activate type inferrence tracing
 //#define TRACE(x) x
@@ -446,10 +446,12 @@ static Type infereSigType(Tree sig, Tree env)
     }
 
     else if (isSigBinOp(sig, &i, s1, s2)) {
+        
         // Type t = T(s1,env)|T(s2,env);
         Type t1 = T(s1, env);
         Type t2 = T(s2, env);
-        Type t3 = castInterval(t1 | t2, arithmetic(i, t1->getInterval(), t2->getInterval()));
+        Type t3 = castInterval(t1 | t2, arithmetic(i, t1->getInterval(), t2->getInterval(), t1->nature(), t2->nature()));
+       
         // cerr <<"type rule for : " << ppsig(sig) << " -> " << *t3 << endl;
 
         if (i == kDiv) {
@@ -902,15 +904,15 @@ static Type infereXType(Tree sig, Tree env)
  * @param s2 interval of the right operand
  * @return the resulting interval
  */
-static interval arithmetic(int opcode, const interval& x, const interval& y)
+static interval arithmetic(int opcode, const interval& x, const interval& y, int n1, int n2)
 {
     switch (opcode) {
         case kAdd:
-            return x + y;
+            return (n1 == kInt && n2 == kInt) ? add_overflow(x, y) : (x + y);
         case kSub:
-            return x - y;
+            return (n1 == kInt && n2 == kInt) ? sub_overflow(x, y) : (x - y);
         case kMul:
-            return x * y;
+            return (n1 == kInt && n2 == kInt) ? mul_overflow(x, y) : (x * y);
         case kDiv:
             return x / y;
         case kRem:

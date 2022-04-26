@@ -155,9 +155,40 @@ inline interval operator+(const interval& x, const interval& y)
     return (x.valid & y.valid) ? interval(x.lo + y.lo, x.hi + y.hi) : interval();
 }
 
+inline interval add_overflow(const interval& x, const interval& y)
+{
+    if (x.valid & y.valid) {
+        int res1;
+        bool ret1 = __builtin_add_overflow(int(x.lo), int(y.lo), &res1);
+        if (ret1) std::cout << "add_overflow " << int(x.lo) << " " << int(y.lo) << std::endl;
+        int res2;
+        bool ret2 = __builtin_add_overflow(int(x.lo), int(y.lo), &res2);
+        if (ret2) std::cout << "add_overflow " << int(x.hi) << " " << int(y.hi) << std::endl;
+        return interval(int(x.lo) + int(y.lo), int(x.hi) + int(y.hi));
+    } else {
+        return interval();
+    }
+}
+
 inline interval operator-(const interval& x, const interval& y)
 {
     return (x.valid & y.valid) ? interval(x.lo - y.hi, x.hi - y.lo) : interval();
+}
+
+inline interval sub_overflow(const interval& x, const interval& y)
+{
+    if (x.valid & y.valid) {
+        int res1;
+        bool ret1 = __builtin_sub_overflow(int(x.lo), int(y.hi), &res1);
+        if (ret1) std::cout << "sub_overflow " << int(x.lo) << " " << int(y.hi) << std::endl;
+        int res2;
+        bool ret2 = __builtin_sub_overflow(int(x.hi), int(y.lo), &res2);
+        if (ret2) std::cout << "sub_overflow " << int(x.hi) << " " << int(y.lo) << std::endl;
+        return interval(int(x.lo) - int(y.hi), int(x.hi) - int(y.lo));
+    } else {
+        return interval();
+    }
+>>>>>>> d775f0d7f (In progress.)
 }
 
 inline double specialmult(double a, double b)
@@ -172,6 +203,32 @@ inline interval operator*(const interval& x, const interval& y)
         double b = specialmult(x.lo, y.hi);
         double c = specialmult(x.hi, y.lo);
         double d = specialmult(x.hi, y.hi);
+        return interval(min4(a, b, c, d), max4(a, b, c, d));
+    } else {
+        return interval();
+    }
+}
+
+inline double specialmult_overflow(double a, double b)
+{
+    // we want inf*0 to be 0
+    if ((a == 0.0) || (b == 0.0)) {
+        return 0.0;
+    } else {
+        int res;
+        bool ret = __builtin_mul_overflow (int(a), int(b), &res);
+        if (ret) std::cout << "mul_overflow  " << int(a) << " " << int(b) <<  " " << int(a) * int(b) << " " << a * b << std::endl;
+        return double(int(a) * int(b));
+    }
+   
+}
+inline interval mul_overflow(const interval& x, const interval& y)
+{
+    if (x.valid & y.valid) {
+        double a = specialmult_overflow(x.lo, y.lo);
+        double b = specialmult_overflow(x.lo, y.hi);
+        double c = specialmult_overflow(x.hi, y.lo);
+        double d = specialmult_overflow(x.hi, y.hi);
         return interval(min4(a, b, c, d), max4(a, b, c, d));
     } else {
         return interval();
