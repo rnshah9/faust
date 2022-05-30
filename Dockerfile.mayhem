@@ -13,4 +13,3 @@ RUN \
   make -j8 && make install && \
   make clean && \
   apt-get purge -y build-essential llvm libncurses5-dev && apt-get autoremove -y
-RUN make faust
