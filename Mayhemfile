@@ -1,6 +1,5 @@
-project: rnshah9/faust
+project: faust
 target: faust
-tests: null
 
 cmds:
   - cmd: /usr/local/bin/faust @@
