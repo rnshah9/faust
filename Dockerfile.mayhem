@@ -1,24 +1,18 @@
 FROM debian:stable-slim as builder
 
-RUN mkdir /faust
-WORKDIR /faust
 COPY . /faust
+WORKDIR /faust
 
 RUN \
   apt-get update && \
   apt-get install -y build-essential llvm libncurses5-dev libncurses5 libmicrohttpd-dev git cmake pkg-config && \
   rm -rf /var/lib/apt/lists/*
 
+ENV DESTDIR=/install
 RUN \
   make -j8 && make install && \
   make clean && \
   apt-get purge -y build-essential llvm libncurses5-dev && apt-get autoremove -y
 
-RUN mkdir -p /deps
-RUN ldd /usr/local/bin/faust | tr -s '[:blank:]' '\n' | grep '^/' | xargs -I % sh -c 'cp % /deps;'
-
 FROM debian:stable-slim as package
-
-COPY --from=builder /deps /deps
-COPY --from=builder /usr/local/bin/faust /usr/local/bin/faust
-ENV LD_LIBRARY_PATH=/deps
+COPY --from=builder /install /install

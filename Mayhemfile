@@ -2,4 +2,4 @@ project: faust
 target: faust
 
 cmds:
-  - cmd: /usr/local/bin/faust @@
+  - cmd: /install/usr/local/bin/faust @@
