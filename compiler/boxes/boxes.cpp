@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -36,9 +36,9 @@
  *  parallel (,), split (<:), merge (:>), and recursive (~).
  */
 
+#include "boxes.hh"
 #include <stdio.h>
 #include <string.h>
-#include "boxes.hh"
 #include "exception.hh"
 #include "global.hh"
 #include "ppbox.hh"
@@ -467,22 +467,38 @@ static Tree makeRecProjectionsList(int n, int i, Tree lnames, Tree ldef)
 }
 
 // buildRecursiveBodyDef(n,lnames,lexp) => "RECURSIVEBODY = \(lnames).(lexp) ~ bus(n);"
-static Tree buildRecursiveBodyDef(int n, Tree lnames, Tree lexp)
+static Tree buildRecursiveBodyDef(int n, Tree lnames, Tree lexp, Tree ldef2)
 {
-    return cons(gGlobal->LETRECBODY, boxRec(makeBoxAbstr(lnames, makeParList(lexp)), makeBus(n)));
+    if (ldef2 == gGlobal->nil) {
+        return cons(gGlobal->LETRECBODY, boxRec(makeBoxAbstr(lnames, makeParList(lexp)), makeBus(n)));
+    } else {
+        return cons(gGlobal->LETRECBODY,
+                    boxRec(makeBoxAbstr(lnames, boxWithLocalDef(makeParList(lexp), ldef2)), makeBus(n)));
+    }
 }
 
 //----------------------------------------------------------------------------
-// Transform a letrec expression into a with expression
+// Transform a letrec expression into a with expression. The 'where' part
+// is optional. It allows for common local definitions. It is translated into
+// a with{} inside the body of the abstraction. Only signals x and y are
+// visible outside the letrec. The foo definition after the where is not visible
+// outside.
+//
+// process = x * y letrec {
+//  'x = foo(x,y);
+//  'y = foo(y,x);
+//  where
+//    foo(u, v) = u - v;
+//  };
 //----------------------------------------------------------------------------
-Tree boxWithRecDef(Tree body, Tree ldef)
+Tree boxWithRecDef(Tree body, Tree ldef, Tree ldef2)
 {
     // cout << "list of recursive definitions : " << *ldef << endl;
     Tree lnames = def2names(ldef);
     Tree lexp   = def2exp(ldef);
     int  n      = len(ldef);
 
-    Tree rdef = buildRecursiveBodyDef(n, lnames, lexp);
+    Tree rdef = buildRecursiveBodyDef(n, lnames, lexp, ldef2);
     Tree lrp  = makeRecProjectionsList(n, 0, lnames, gGlobal->nil);
     Tree w    = boxWithLocalDef(body, cons(rdef, lrp));
     // cerr << "boxWithRecDef(" << boxpp(body) << ',' << *ldef << ") -> " << boxpp(w) << endl;

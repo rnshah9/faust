@@ -314,7 +314,7 @@ extern "C"
      * @param selector - when 0 at time t returns s1[t], when 1 at time t returns s2[t], otherwise returns s3[t]
      * @param s1 - first box to be selected
      * @param s2 - second box to be selected
-     * @param s3 - third signal to be selected
+     * @param s3 - third box to be selected
      *
      * @return the selected box depending of the selector value at each time t.
      */
@@ -545,7 +545,7 @@ extern "C"
      * @param max - the max box, a constant numerical expression (see [1])
      * @param x - the input box
      *
-     * @return the vertical horizontal box.
+     * @return the horizontal bargraph box.
      */
     LIBFAUST_API Box CboxHBargraphAux(const char* label, Box min, Box max, Box x);
     
@@ -565,24 +565,47 @@ extern "C"
      *
      * The attach primitive takes two input box and produces one output box
      * which is a copy of the first input. The role of attach is to force
-     * its second input signal to be compiled with the first one.
+     * its second input box to be compiled with the first one.
      *
      * @param s1 - the first box
      * @param s2 - the second box
      *
-     * @return the attach signal.
+     * @return the attach box.
      */
     LIBFAUST_API Box CboxAttachAux(Box s1, Box s2);
     
     /**
+     * Compile a DSP source code as a string in a flattened box
+     *
+     * @param dsp_content - the Faust program as a string
+     * @param inputs - the place to return the number of inputs of the resulting box
+     * @param outputs - the place to return the number of outputs of the resulting box
+     * @param error_msg - the error string to be filled
+     *
+     * @return a compiled box on success, otherwise a null pointer.
+     */
+    LIBFAUST_API Box CDSPToBoxes(const char* dsp_content, int* inputs, int* outputs, char* error_msg);
+    
+    /**
+     * Return the number of inputs and outputs of a box
+     *
+     * @param box - the box we want to know the number of inputs and outputs
+     * @param inputs - the place to return the number of inputs
+     * @param outputs - the place to return the number of outputs
+     *
+     * @return true if type is defined, false if undefined.
+     */
+    LIBFAUST_API bool getCBoxType(Box box, int* inputs, int* outputs);
+
+    /**
      * Compile a box expression in a null terminated array of signals.
      *
      * @param box - the box expression
-     * @param error_msg - the error string to be filled
+     * @param error_msg - the error string to be filled, has to be 4096 characters long
      *
      * @return a null terminated array of signals on success (to be deleted by the caller using freeCMemory), otherwise a nullptr.
      */
-    Signal* CboxesToSignals(Box box, char* error_msg);
+    LIBFAUST_API Signal* CboxesToSignals(Box box, char* error_msg);
     
     /*
      [1] Constant numerical expression : see https://faustdoc.grame.fr/manual/syntax/#constant-numerical-expressions

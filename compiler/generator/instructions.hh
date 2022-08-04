@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -115,7 +115,10 @@ struct VectorTyped;
 struct NamedAddress;
 struct IndexedAddress;
 
-typedef list<ValueInst*>::const_iterator ListValuesIt;
+typedef list<ValueInst*> Values;
+typedef list<ValueInst*>::const_iterator ValuesIt;
+typedef list<NamedTyped*> Names;
+typedef list<NamedTyped*>::const_iterator NamesIt;
 
 // Type checking
 
@@ -416,8 +419,6 @@ struct NullStatementInst : public StatementInst {
 
 // Base type is defined in instructions_type.h
 
-Typed::VarType ctType(Type t);
-
 struct BasicTyped : public Typed {
     const VarType fType;
 
@@ -437,7 +438,7 @@ struct BasicTyped : public Typed {
 struct NamedTyped : public Typed {
     
     enum Attribute { kDefault, kNoalias };
-    static vector <string> AttributeMap;
+    static std::vector <string> AttributeMap;
     
     const string fName;
     Typed* fType;
@@ -460,11 +461,11 @@ struct NamedTyped : public Typed {
 struct FunTyped : public Typed {
     enum FunAttribute { kDefault = 0x1, kLocal = 0x2, kVirtual = 0x4, kStatic = 0x8, kInline = 0x10 };
 
-    list<NamedTyped*> fArgsTypes;
-    BasicTyped*       fResult;
-    FunAttribute      fAttribute;
+    Names         fArgsTypes;
+    BasicTyped*   fResult;
+    FunAttribute  fAttribute;
 
-    FunTyped(const list<NamedTyped*>& args, BasicTyped* result, FunAttribute attribute = kDefault)
+    FunTyped(const Names& args, BasicTyped* result, FunAttribute attribute = kDefault)
         : fArgsTypes(args), fResult(result), fAttribute(attribute)
     {
     }
@@ -522,9 +523,9 @@ struct ArrayTyped : public Typed {
 
 struct StructTyped : public Typed {
     const string        fName;
-    vector<NamedTyped*> fFields;
+    std::vector<NamedTyped*> fFields;
 
-    StructTyped(const string& name, const vector<NamedTyped*>& fields) : fName(name), fFields(fields) {}
+    StructTyped(const string& name, const std::vector<NamedTyped*>& fields) : fName(name), fFields(fields) {}
 
     virtual ~StructTyped() {}
 
@@ -573,8 +574,8 @@ struct VectorTyped : public Typed {
     Typed* clone(CloneVisitor* cloner) { return cloner->visit(this); }
 };
 
-struct NumValueInst {
-};
+// Base class for number values
+struct NumValueInst {};
 
 // ===========
 //  Addresses
@@ -650,9 +651,15 @@ struct NamedAddress : public Address {
 
 struct IndexedAddress : public Address {
     Address*   fAddress;
-    ValueInst* fIndex;
+    std::vector<ValueInst*> fIndices;
 
-    IndexedAddress(Address* address, ValueInst* index) : fAddress(address), fIndex(index) {}
+    IndexedAddress(Address* address, ValueInst* index) : fAddress(address)
+    {
+        fIndices.push_back(index);
+    }
+    
+    IndexedAddress(Address* address, const std::vector<ValueInst*>& indices) : fAddress(address), fIndices(indices)
+    {}
 
     virtual ~IndexedAddress() {}
 
@@ -662,8 +669,9 @@ struct IndexedAddress : public Address {
     void   setName(const string& name) { fAddress->setName(name); }
     string getName() const { return fAddress->getName(); }
 
-    ValueInst* getIndex() const { return fIndex; }
-
+    ValueInst* getIndex(int index = 0) const { return fIndices[index]; }
+    std::vector<ValueInst*> getIndices() const { return fIndices; }
+ 
     Address* clone(CloneVisitor* cloner) { return cloner->visit(this); }
 
     void accept(InstVisitor* visitor) { visitor->visit(this); }
@@ -950,9 +958,9 @@ struct FloatNumInst : public ValueInst, public NumValueInst {
 
 template <class TYPE>
 struct ArrayNumInst : public ValueInst {
-    vector<TYPE> fNumTable;
+    std::vector<TYPE> fNumTable;
 
-    ArrayNumInst(const vector<TYPE>& nums) : ValueInst(), fNumTable(nums) {}
+    ArrayNumInst(const std::vector<TYPE>& nums) : ValueInst(), fNumTable(nums) {}
 
     ArrayNumInst(int size) : ValueInst() { fNumTable.resize(size); }
 
@@ -966,7 +974,7 @@ struct ArrayNumInst : public ValueInst {
 };
 
 struct FloatArrayNumInst : public ArrayNumInst<float> {
-    FloatArrayNumInst(const vector<float>& nums) : ArrayNumInst<float>(nums) {}
+    FloatArrayNumInst(const std::vector<float>& nums) : ArrayNumInst<float>(nums) {}
     FloatArrayNumInst(int size) : ArrayNumInst<float>(size) {}
 
     void accept(InstVisitor* visitor) { visitor->visit(this); }
@@ -987,7 +995,7 @@ struct DoubleNumInst : public ValueInst, public NumValueInst {
 };
 
 struct DoubleArrayNumInst : public ArrayNumInst<double> {
-    DoubleArrayNumInst(const vector<double>& nums) : ArrayNumInst<double>(nums) {}
+    DoubleArrayNumInst(const std::vector<double>& nums) : ArrayNumInst<double>(nums) {}
     DoubleArrayNumInst(int size) : ArrayNumInst<double>(size) {}
 
     void accept(InstVisitor* visitor) { visitor->visit(this); }
@@ -1008,7 +1016,7 @@ struct FixedPointNumInst : public ValueInst, public NumValueInst {
 };
 
 struct FixedPointArrayNumInst : public ArrayNumInst<double> {
-    FixedPointArrayNumInst(const vector<double>& nums) : ArrayNumInst<double>(nums) {}
+    FixedPointArrayNumInst(const std::vector<double>& nums) : ArrayNumInst<double>(nums) {}
     FixedPointArrayNumInst(int size) : ArrayNumInst<double>(size) {}
     
     void accept(InstVisitor* visitor) { visitor->visit(this); }
@@ -1041,7 +1049,7 @@ struct Int64NumInst : public ValueInst, public NumValueInst {
 };
 
 struct Int32ArrayNumInst : public ArrayNumInst<int> {
-    Int32ArrayNumInst(const vector<int>& nums) : ArrayNumInst<int>(nums) {}
+    Int32ArrayNumInst(const std::vector<int>& nums) : ArrayNumInst<int>(nums) {}
     Int32ArrayNumInst(int size) : ArrayNumInst<int>(size) {}
 
     void accept(InstVisitor* visitor) { visitor->visit(this); }
@@ -1246,10 +1254,10 @@ struct RetInst : public StatementInst {
 
 struct FunCallInst : public ValueInst {
     const string     fName;
-    list<ValueInst*> fArgs;  // List of arguments
+    Values fArgs;  // List of arguments
     const bool       fMethod;
 
-    FunCallInst(const string& name, const list<ValueInst*>& args, bool method)
+    FunCallInst(const string& name, const Values& args, bool method)
         : ValueInst(), fName(name), fArgs(args), fMethod(method)
     {
     }
@@ -1433,7 +1441,11 @@ class BasicCloneVisitor : public CloneVisitor {
     virtual Address* visit(NamedAddress* address) { return new NamedAddress(address->fName, address->fAccess); }
     virtual Address* visit(IndexedAddress* address)
     {
-        return new IndexedAddress(address->fAddress->clone(this), address->fIndex->clone(this));
+        std::vector<ValueInst*> indices;
+        for (const auto& it : address->fIndices) {
+            indices.push_back(static_cast<ValueInst*>(it->clone(this)));
+        }
+        return new IndexedAddress(address->fAddress->clone(this), indices);
     }
 
     // Numbers
@@ -1468,7 +1480,7 @@ class BasicCloneVisitor : public CloneVisitor {
     // Function call
     virtual ValueInst* visit(FunCallInst* inst)
     {
-        list<ValueInst*> cloned_args;
+        Values cloned_args;
         for (const auto& it : inst->fArgs) {
             cloned_args.push_back(it->clone(this));
         }
@@ -1529,7 +1541,11 @@ class BasicCloneVisitor : public CloneVisitor {
 
     virtual StatementInst* visit(IteratorForLoopInst* inst)
     {
-        return new IteratorForLoopInst(inst->fIterators, inst->fReverse, static_cast<BlockInst*>(inst->fCode->clone(this)));
+        std::vector<NamedAddress*> iterators;
+        for (const auto& it : inst->fIterators) {
+            iterators.push_back(static_cast<NamedAddress*>(it->clone(this)));
+        }
+        return new IteratorForLoopInst(iterators, inst->fReverse, static_cast<BlockInst*>(inst->fCode->clone(this)));
     }
 
     virtual StatementInst* visit(WhileLoopInst* inst)
@@ -1581,7 +1597,7 @@ class BasicCloneVisitor : public CloneVisitor {
     virtual Typed* visit(NamedTyped* typed) { return new NamedTyped(typed->fName, typed->fType); }
     virtual Typed* visit(FunTyped* typed)
     {
-        list<NamedTyped*> cloned;
+        Names cloned;
         for (const auto& it : typed->fArgsTypes) {
             cloned.push_back(static_cast<NamedTyped*>(it->clone(this)));
         }
@@ -1593,7 +1609,7 @@ class BasicCloneVisitor : public CloneVisitor {
     }
     virtual Typed* visit(StructTyped* typed)
     {
-        vector<NamedTyped*> cloned;
+        std::vector<NamedTyped*> cloned;
         for (const auto& it : typed->fFields) {
             cloned.push_back(static_cast<NamedTyped*>(it->clone(this)));
         }
@@ -1651,7 +1667,9 @@ struct DispatchVisitor : public InstVisitor {
     virtual void visit(IndexedAddress* address)
     {
         address->fAddress->accept(this);
-        address->fIndex->accept(this);
+        for (const auto& it : address->fIndices) {
+            it->accept(this);
+        }
     }
 
     virtual void visit(BinopInst* inst)
@@ -2156,19 +2174,19 @@ struct InstBuilder {
     static SwitchInst* genSwitchInst(ValueInst* cond) { return new SwitchInst(cond); }
 
     // Function management
-    static FunCallInst* genFunCallInst(const string& name, const list<ValueInst*>& args)
+    static FunCallInst* genFunCallInst(const string& name, const Values& args)
     {
         return new FunCallInst(name, args, false);
     }
-    static FunCallInst* genFunCallInst(const string& name, const list<ValueInst*>& args, bool method)
+    static FunCallInst* genFunCallInst(const string& name, const Values& args, bool method)
     {
         return new FunCallInst(name, args, method);
     }
-    static DropInst* genVoidFunCallInst(const string& name, const list<ValueInst*>& args)
+    static DropInst* genVoidFunCallInst(const string& name, const Values& args)
     {
         return new DropInst(new FunCallInst(name, args, false));
     }
-    static DropInst* genVoidFunCallInst(const string& name, const list<ValueInst*>& args, bool method)
+    static DropInst* genVoidFunCallInst(const string& name, const Values& args, bool method)
     {
         return new DropInst(new FunCallInst(name, args, method));
     }
@@ -2223,7 +2241,7 @@ struct InstBuilder {
     static NamedTyped* genNamedTyped(const string& name, Typed* type);
     static NamedTyped* genNamedTyped(const string& name, Typed::VarType type);
 
-    static FunTyped* genFunTyped(const list<NamedTyped*>& args, BasicTyped* result,
+    static FunTyped* genFunTyped(const Names& args, BasicTyped* result,
                                  FunTyped::FunAttribute attribute = FunTyped::kDefault)
     {
         return new FunTyped(args, result, attribute);
@@ -2233,7 +2251,7 @@ struct InstBuilder {
     {
         return new ArrayTyped(type, size);
     }
-    static StructTyped* genStructTyped(const string& name, const vector<NamedTyped*>& fields)
+    static StructTyped* genStructTyped(const string& name, const std::vector<NamedTyped*>& fields)
     {
         return new StructTyped(name, fields);
     }
@@ -2247,6 +2265,11 @@ struct InstBuilder {
     {
         return new IndexedAddress(address, index);
     }
+    
+    static IndexedAddress* genIndexedAddress(Address* address, const std::vector<ValueInst*>& indices)
+    {
+        return new IndexedAddress(address, indices);
+    }
 
     // Helper build methods
     static DeclareVarInst* genDecArrayVar(const string& vname, Address::AccessType var_access, Typed* type, int size)
@@ -2258,6 +2281,7 @@ struct InstBuilder {
     {
         return genLoadVarInst(genIndexedAddress(genNamedAddress(vname, var_access), index));
     }
+    
     // Actually same as genLoadArrayVar
     static LoadVarInst* genLoadStructPtrVar(const string& vname, Address::AccessType var_access, ValueInst* index)
     {
@@ -2302,26 +2326,34 @@ struct InstBuilder {
     {
         return genLoadVarInst(genNamedAddress(vname, (Address::AccessType)(Address::kStruct | Address::kVolatile)));
     }
+    
+    template <typename Iterator>
+    static LoadVarInst* genLoadArrayVar(const string& vname, Address::AccessType access, Iterator begin, Iterator end)
+    {
+        Address* address = genNamedAddress(vname, access);
+        std::vector<ValueInst*> indices;
+        for (Iterator it = begin; it != end; ++it) {
+            indices.push_back(*it);
+        }
+        address = genIndexedAddress(address, indices);
+    
+        return genLoadVarInst(address);
+    }
 
     template <typename Iterator>
     static LoadVarInst* genLoadArrayStructVar(const string& vname, Iterator indexBegin, Iterator indexEnd)
     {
-        typedef reverse_iterator<Iterator> Rit;
-        Rit                                rbegin(indexEnd);
-        Rit                                rend(indexBegin);
-
-        Address* address = genNamedAddress(vname, Address::kStruct);
-        for (Rit it = rbegin; it != rend; ++it) {
-            address = genIndexedAddress(address, *it);
-        }
-
-        return genLoadVarInst(address);
+        return genLoadArrayVar(vname, Address::kStruct, indexBegin, indexEnd);
     }
 
     static LoadVarInst* genLoadArrayStructVar(const string& vname, ValueInst* index)
     {
-        vector<ValueInst*> indices;
-        indices.push_back(index);
+        std::vector<ValueInst*> indices = { index };
+        return genLoadArrayStructVar(vname, indices.begin(), indices.end());
+    }
+    
+    static LoadVarInst* genLoadArrayStructVar(const string& vname, const std::vector<ValueInst*>& indices)
+    {
         return genLoadArrayStructVar(vname, indices.begin(), indices.end());
     }
 
@@ -2346,26 +2378,36 @@ struct InstBuilder {
                                exp);
     }
 
+    
     template <typename Iterator>
-    static StoreVarInst* genStoreArrayStructVar(const string& vname, ValueInst* exp, Iterator indexBegin,
+    static StoreVarInst* genStoreArrayVar(const string& vname,
+                                          ValueInst* exp,
+                                          Address::AccessType access,
+                                          Iterator begin,
+                                          Iterator end)
+    {
+        Address* address = genNamedAddress(vname, access);
+        std::vector<ValueInst*> indices;
+        for (Iterator it = begin; it != end; ++it) {
+            indices.push_back(*it);
+        }
+        address = genIndexedAddress(address, indices);
+                
+        return genStoreVarInst(address, exp);
+    }
+
+    template <typename Iterator>
+    static StoreVarInst* genStoreArrayStructVar(const string& vname,
+                                                ValueInst* exp,
+                                                Iterator indexBegin,
                                                 Iterator indexEnd)
     {
-        typedef reverse_iterator<Iterator> Rit;
-        Rit                                rbegin(indexEnd);
-        Rit                                rend(indexBegin);
-
-        Address* address = genNamedAddress(vname, Address::kStruct);
-        for (Rit it = rbegin; it != rend; ++it) {
-            address = genIndexedAddress(address, *it);
-        }
-
-        return genStoreVarInst(address, exp);
+        return genStoreArrayVar(vname, exp, Address::kStruct, indexBegin, indexEnd);
     }
 
     static StoreVarInst* genStoreArrayStructVar(const string& vname, ValueInst* index, ValueInst* exp)
     {
-        vector<ValueInst*> indices;
-        indices.push_back(index);
+        std::vector<ValueInst*> indices = {index};
         return genStoreArrayStructVar(vname, exp, indices.begin(), indices.end());
     }
 
@@ -2405,22 +2447,12 @@ struct InstBuilder {
     template <typename Iterator>
     static LoadVarInst* genLoadArrayStaticStructVar(const string& vname, Iterator indexBegin, Iterator indexEnd)
     {
-        typedef reverse_iterator<Iterator> Rit;
-        Rit                                rbegin(indexEnd);
-        Rit                                rend(indexBegin);
-
-        Address* address = genNamedAddress(vname, Address::kStaticStruct);
-        for (Rit it = rbegin; it != rend; ++it) {
-            address = genIndexedAddress(address, *it);
-        }
-
-        return genLoadVarInst(address);
+        return genLoadArrayVar(vname, Address::kStaticStruct, indexBegin, indexEnd);
     }
 
     static LoadVarInst* genLoadArrayStaticStructVar(const string& vname, ValueInst* index)
     {
-        vector<ValueInst*> indices;
-        indices.push_back(index);
+        std::vector<ValueInst*> indices = {index};
         return genLoadArrayStaticStructVar(vname, indices.begin(), indices.end());
     }
 
@@ -2428,22 +2460,12 @@ struct InstBuilder {
     static StoreVarInst* genStoreArrayStaticStructVar(const string& vname, ValueInst* exp, Iterator indexBegin,
                                                       Iterator indexEnd)
     {
-        typedef reverse_iterator<Iterator> Rit;
-        Rit                                rbegin(indexEnd);
-        Rit                                rend(indexBegin);
-
-        Address* address = genNamedAddress(vname, Address::kStaticStruct);
-        for (Rit it = rbegin; it != rend; ++it) {
-            address = genIndexedAddress(address, *it);
-        }
-
-        return genStoreVarInst(address, exp);
+        return genStoreArrayVar(vname, exp, Address::kStaticStruct, indexBegin, indexEnd);
     }
 
     static StoreVarInst* genStoreArrayStaticStructVar(const string& vname, ValueInst* index, ValueInst* exp)
     {
-        vector<ValueInst*> indices;
-        indices.push_back(index);
+        std::vector<ValueInst*> indices = {index};
         return genStoreArrayStructVar(vname, exp, indices.begin(), indices.end());
     }
 
@@ -2619,7 +2641,7 @@ struct InstBuilder {
 
     // Functions
     static DeclareFunInst* genVoidFunction(const string& name, BlockInst* code = new BlockInst());
-    static DeclareFunInst* genVoidFunction(const string& name, list<NamedTyped*>& args, BlockInst* code,
+    static DeclareFunInst* genVoidFunction(const string& name, Names& args, BlockInst* code,
                                            bool isvirtual = false);
     static DeclareFunInst* genFunction0(const string& name, Typed::VarType res, BlockInst* code = new BlockInst());
     static DeclareFunInst* genFunction1(const string& name, Typed::VarType res, const string& arg1,

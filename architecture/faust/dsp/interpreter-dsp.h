@@ -40,7 +40,8 @@ architecture section is not modified.
 #include "faust/gui/meta.h"
 
 /*!
- \addtogroup interpretercpp C++ interface for compiling Faust code with the Interpreter backend. Note that the API is not thread safe: use 'startMTDSPFactories/stopMTDSPFactories' to use it in a multi-thread context.
+ \addtogroup interpretercpp C++ interface for compiling Faust code with the Interpreter backend.
+ Note that the API is not thread safe: use 'startMTDSPFactories/stopMTDSPFactories' to use it in a multi-thread context.
  @{
  */
 
@@ -139,7 +140,7 @@ class LIBFAUST_API interpreter_dsp_factory : public dsp_factory {
  *
  * @param sha_key - the SHA key for an already created factory, kept in the factory cache
  *
- * @return a DSP factory if one is associated with the SHA key, otherwise a null pointer.
+ * @return a valid DSP factory if one is associated with the SHA key, otherwise a null pointer.
  */
 LIBFAUST_API interpreter_dsp_factory* getInterpreterDSPFactoryFromSHAKey(const std::string& sha_key);
 
@@ -205,7 +206,6 @@ LIBFAUST_API interpreter_dsp_factory* createInterpreterDSPFactoryFromSignals(con
  * @param argc - the number of parameters in argv array
  * @param argv - the array of parameters
  * @param error_msg - the error string to be filled
- * since the maximum value may change with new LLVM versions)
  *
  * @return a DSP factory on success, otherwise a null pointer.
  */
@@ -238,7 +238,6 @@ DEPRECATED(std::vector<std::string> getInterpreterDSPFactoryLibraryList(interpre
 
 /**
  * Delete all Faust DSP factories kept in the library cache. Beware: all kept factory and DSP pointers (in local variables...) thus become invalid.
- * 
  */                                 
 LIBFAUST_API void deleteAllInterpreterDSPFactories();
 
@@ -258,7 +257,6 @@ extern "C" LIBFAUST_API bool startMTDSPFactories();
 
 /**
  * Stop multi-thread access mode.
- *
  */
 extern "C" LIBFAUST_API void stopMTDSPFactories();
 

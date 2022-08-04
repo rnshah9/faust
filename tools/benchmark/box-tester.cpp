@@ -613,6 +613,61 @@ static void test24(int argc, char* argv[])
     }
 }
 
+// Compile a complete DSP program to a box expression
+static void test25(int argc, char* argv[])
+{
+    createLibContext();
+    {
+        int inputs = 0;
+        int outputs = 0;
+        string error_msg;
+    
+        // Create the oscillator
+        Box osc = DSPToBoxes("import(\"stdfaust.lib\"); process = os.osc(440);", &inputs, &outputs, error_msg);
+        
+        // Compile it
+        dsp_factory_base* factory = createCPPDSPFactoryFromBoxes("FaustDSP", osc, argc, (const char**)argv, error_msg);
+        if (factory) {
+            factory->write(&cout);
+            delete(factory);
+        } else {
+            cerr << error_msg;
+        }
+    }
+    destroyLibContext();
+}
+
+// Compile a complete DSP program to a box expression, then use the result in another expression
+static void test26(int argc, char* argv[])
+{
+    createLibContext();
+    {
+        int inputs = 0;
+        int outputs = 0;
+        string error_msg;
+        
+        // Create the filter without parameter
+        Box filter = DSPToBoxes("import(\"stdfaust.lib\"); process = fi.lowpass(5);", &inputs, &outputs, error_msg);
+        
+        // Create the filter parameters and connect
+        Box cutoff = boxHSlider("cutoff", boxReal(300), boxReal(100), boxReal(2000), boxReal(0.01));
+        Box cutoffAndInput = boxPar(cutoff, boxWire());
+        Box filteredInput = boxSeq(cutoffAndInput, filter);
+    
+        getBoxType(filteredInput, &inputs, &outputs);
+        std::cout << "getBoxType inputs: " << inputs << " outputs: " << outputs << std::endl;
+    
+        dsp_factory_base* factory = createCPPDSPFactoryFromBoxes("FaustDSP", filteredInput, argc, (const char**)argv, error_msg);
+        if (factory) {
+            factory->write(&cout);
+            delete(factory);
+        } else {
+            cerr << error_msg;
+        }
+    }
+    destroyLibContext();
+}
+
 list<GUI*> GUI::fGuiList;
 ztimedmap GUI::gTimedZoneMap;
 
@@ -640,6 +695,12 @@ int main(int argc, char* argv[])
     test18();
     test19();
     test20();
+    
+    // Test 'DSPToBoxes' API
+    test25(argc, argv);
+    
+    // Test 'DSPToBoxes' API
+    test26(argc, argv);
     
     // Test with audio, GUI and LLVM backend
     test21(argc, argv);

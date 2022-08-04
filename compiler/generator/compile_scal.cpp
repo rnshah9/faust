@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -1217,17 +1217,25 @@ string ScalarCompiler::generateControl(Tree sig, Tree x, Tree y)
 
 string ScalarCompiler::generatePrefix(Tree sig, Tree x, Tree e)
 {
-    Type te = getCertifiedSigType(sig);  //, tEnv);
-
-    string vperm = getFreshID("M");
-    string vtemp = getFreshID("T");
-
-    string type = (te->nature() == kInt) ? "int" : ifloat();
+    string vperm = getFreshID("pfPerm");
+    string vtemp = getFreshID("pfTemp");
+    string type = (getCertifiedSigType(sig)->nature() == kInt) ? "int" : ifloat();
 
     fClass->addDeclCode(subst("$0 \t$1;", type, vperm));
     fClass->addInitCode(subst("$0 = $1;", vperm, CS(x)));
 
     fClass->addExecCode(Statement(getConditionCode(sig), subst("$0 \t$1 = $2;", type, vtemp, vperm)));
+    
+    /*
+    string res = CS(e);
+    string vname;
+    if (getVectorNameProperty(e, vname)) {
+        setVectorNameProperty(sig, vname);
+    } else {
+        faustassert(false);
+    }
+    */
+    
     fClass->addExecCode(Statement(getConditionCode(sig), subst("$0 = $1;", vperm, CS(e))));
     return vtemp;
 }
@@ -1323,8 +1331,9 @@ string ScalarCompiler::generateDelay(Tree sig, Tree exp, Tree delay)
             // cerr << "it is a pure zero delay : " << code << endl;
             return code;
         } else {
-            cerr << "No vector name for : " << ppsig(exp) << endl;
-            faustassert(0);
+            stringstream error;
+            error << "ERROR : no vector name for : " << ppsig(exp) << endl;
+            throw faustexception(error.str());
         }
     }
 

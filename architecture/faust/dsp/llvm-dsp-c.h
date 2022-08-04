@@ -1,4 +1,4 @@
-/************************** BEGIN llvm-c-dsp.h *****************************
+/************************** BEGIN llvm-dsp-c.h *****************************
 FAUST Architecture File
 Copyright (C) 2003-2022 GRAME, Centre National de Creation Musicale
 ---------------------------------------------------------------------
@@ -31,7 +31,8 @@ architecture section is not modified.
 #include "faust/dsp/libfaust-signal-c.h"
 
 /*!
- \addtogroup llvmc C interface for compiling Faust code with the LLVM backend. Note that the API is not thread safe : use 'startMTDSPFactories/stopMTDSPFactories' to use it in a multi-thread context.
+ \addtogroup llvmc C interface for compiling Faust code with the LLVM backend.
+ Note that the API is not thread safe : use 'startMTDSPFactories/stopMTDSPFactories' to use it in a multi-thread context.
  @{
  */
 
@@ -136,7 +137,7 @@ extern "C"
      * @param target - the LLVM machine target: like 'i386-apple-macosx10.6.0:opteron',
      *                 using an empty string takes the current machine settings,
      *                 and i386-apple-macosx10.6.0:generic kind of syntax for a generic processor
-     * @param error_msg - the error string to be filled
+     * @param error_msg - the error string to be filled, has to be 4096 characters long
      * @param opt_level - LLVM IR to IR optimization level (from -1 to 4, -1 means 'maximum possible value'
      * since the maximum value may change with new LLVM versions)
      *
@@ -160,7 +161,7 @@ extern "C"
      * @param target - the LLVM machine target: like 'i386-apple-macosx10.6.0:opteron',
      *                 using an empty string takes the current machine settings,
      *                 and i386-apple-macosx10.6.0:generic kind of syntax for a generic processor
-     * @param error_msg - the error string to be filled
+     * @param error_msg - the error string to be filled, has to be 4096 characters long
      * @param opt_level - LLVM IR to IR optimization level (from -1 to 4, -1 means 'maximum possible value'
      * since the maximum value may change with new LLVM versions)
      *
@@ -252,7 +253,6 @@ extern "C"
     
     /**
      * Delete all Faust DSP factories kept in the library cache. Beware: all kept factory pointers (in local variables...) thus become invalid.
-     * 
      */                                 
     LIBFAUST_API void deleteAllCDSPFactories();
     
@@ -272,7 +272,6 @@ extern "C"
 
     /**
      * Stop multi-thread access mode.
-     * 
      */ 
     LIBFAUST_API void stopMTDSPFactories();
   
@@ -502,4 +501,4 @@ extern "C"
  */
  
 #endif
-/************************** END llvm-c-dsp.h **************************/
+/************************** END llvm-dsp-c.h **************************/

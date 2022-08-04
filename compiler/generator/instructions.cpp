@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -63,11 +63,6 @@ ValueInst* InstBuilder::genTypedZero(Typed::VarType type)
     }
 }
 
-Typed::VarType ctType(Type t)
-{
-    return (t->nature() == kInt) ? Typed::kInt32 : Typed::kFloat;
-}
-
 string Typed::gTypeString[] = {"kInt32",          "kInt32_ptr",      "kInt32_vec",          "kInt32_vec_ptr",
                                "kInt64",          "kInt64_ptr",      "kInt64_vec",          "kInt64_vec_ptr",
                                "kBool",           "kBool_ptr",       "kBool_vec",           "kBool_vec_ptr",
@@ -76,7 +71,7 @@ string Typed::gTypeString[] = {"kInt32",          "kInt32_ptr",      "kInt32_vec
                                "kDouble",         "kDouble_ptr",     "kDouble_ptr_ptr",     "kDouble_vec",       "kDouble_vec_ptr",
                                "kQuad",           "kQuad_ptr",       "kQuad_ptr_ptr",       "kQuad_vec",         "kQuad_vec_ptr",
                                "kFixedPoint",     "kFixedPoint_ptr", "kFixedPoint_ptr_ptr", "kFixedPoint_vec",   "kFixedPoint_vec_ptr",
-                               "kVoid",           "kVoid_ptr",       "kVoid_ptr_ptr",
+                               "kVoid",           "kVoid_ptr",       
                                "kObj",            "kObj_ptr",        "kSound",
                                "kSound_ptr",      "kUint_ptr",       "kNoType"};
 
@@ -256,12 +251,12 @@ bool ControlInst::hasCondition(ValueInst* cond)
 // Function calls
 DeclareFunInst* InstBuilder::genVoidFunction(const string& name, BlockInst* code)
 {
-    list<NamedTyped*> args;
-    FunTyped*         fun_type = InstBuilder::genFunTyped(args, InstBuilder::genVoidTyped());
+    Names args;
+    FunTyped* fun_type = InstBuilder::genFunTyped(args, InstBuilder::genVoidTyped());
     return InstBuilder::genDeclareFunInst(name, fun_type, code);
 }
 
-DeclareFunInst* InstBuilder::genVoidFunction(const string& name, list<NamedTyped*>& args, BlockInst* code,
+DeclareFunInst* InstBuilder::genVoidFunction(const string& name, Names& args, BlockInst* code,
                                              bool isvirtual)
 {
     FunTyped* fun_type = InstBuilder::genFunTyped(args, InstBuilder::genVoidTyped(),
@@ -271,7 +266,7 @@ DeclareFunInst* InstBuilder::genVoidFunction(const string& name, list<NamedTyped
 
 DeclareFunInst* InstBuilder::genFunction0(const string& name, Typed::VarType res, BlockInst* code)
 {
-    list<NamedTyped*> args;
+    Names args;
     FunTyped*         fun_type = InstBuilder::genFunTyped(args, InstBuilder::genBasicTyped(res));
     return InstBuilder::genDeclareFunInst(name, fun_type, code);
 }
@@ -279,7 +274,7 @@ DeclareFunInst* InstBuilder::genFunction0(const string& name, Typed::VarType res
 DeclareFunInst* InstBuilder::genFunction1(const string& name, Typed::VarType res, const string& arg1,
                                           Typed::VarType arg1_ty, BlockInst* code)
 {
-    list<NamedTyped*> args;
+    Names args;
     args.push_back(InstBuilder::genNamedTyped(arg1, arg1_ty));
     FunTyped* fun_type = InstBuilder::genFunTyped(args, InstBuilder::genBasicTyped(res));
     return InstBuilder::genDeclareFunInst(name, fun_type, code);
@@ -289,7 +284,7 @@ DeclareFunInst* InstBuilder::genFunction2(const string& name, Typed::VarType res
                                           Typed::VarType arg1_ty, const string& arg2, Typed::VarType arg2_ty,
                                           BlockInst* code)
 {
-    list<NamedTyped*> args;
+    Names args;
     args.push_back(InstBuilder::genNamedTyped(arg1, arg1_ty));
     args.push_back(InstBuilder::genNamedTyped(arg2, arg2_ty));
     FunTyped* fun_type = InstBuilder::genFunTyped(args, InstBuilder::genBasicTyped(res));
@@ -300,7 +295,7 @@ DeclareFunInst* InstBuilder::genFunction3(const string& name, Typed::VarType res
                                           Typed::VarType arg1_ty, const string& arg2, Typed::VarType arg2_ty,
                                           const string& arg3, Typed::VarType arg3_ty, BlockInst* code)
 {
-    list<NamedTyped*> args;
+    Names args;
     args.push_back(InstBuilder::genNamedTyped(arg1, arg1_ty));
     args.push_back(InstBuilder::genNamedTyped(arg2, arg2_ty));
     args.push_back(InstBuilder::genNamedTyped(arg3, arg3_ty));
@@ -313,7 +308,7 @@ DeclareFunInst* InstBuilder::genFunction4(const string& name, Typed::VarType res
                                           const string& arg3, Typed::VarType arg3_ty, const string& arg4,
                                           Typed::VarType arg4_ty, BlockInst* code)
 {
-    list<NamedTyped*> args;
+    Names args;
     args.push_back(InstBuilder::genNamedTyped(arg1, arg1_ty));
     args.push_back(InstBuilder::genNamedTyped(arg2, arg2_ty));
     args.push_back(InstBuilder::genNamedTyped(arg3, arg3_ty));
@@ -328,7 +323,7 @@ DeclareFunInst* InstBuilder::genFunction5(const string& name, Typed::VarType res
                                           Typed::VarType arg4_ty, const string& arg5, Typed::VarType arg5_ty,
                                           BlockInst* code)
 {
-    list<NamedTyped*> args;
+    Names args;
     args.push_back(InstBuilder::genNamedTyped(arg1, arg1_ty));
     args.push_back(InstBuilder::genNamedTyped(arg2, arg2_ty));
     args.push_back(InstBuilder::genNamedTyped(arg3, arg3_ty));
@@ -344,7 +339,7 @@ DeclareFunInst* InstBuilder::genFunction6(const string& name, Typed::VarType res
                                           Typed::VarType arg4_ty, const string& arg5, Typed::VarType arg5_ty,
                                           const string& arg6, Typed::VarType arg6_ty, BlockInst* code)
 {
-    list<NamedTyped*> args;
+    Names args;
     args.push_back(InstBuilder::genNamedTyped(arg1, arg1_ty));
     args.push_back(InstBuilder::genNamedTyped(arg2, arg2_ty));
     args.push_back(InstBuilder::genNamedTyped(arg3, arg3_ty));

@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -45,7 +45,7 @@ static inline void checkToken(const std::string& token, const std::string& expec
 class interpreter_dsp_factory;
 
 typedef class faust_smartptr<interpreter_dsp_factory> SDsp_factory;
-extern dsp_factory_table<SDsp_factory>                gInterpreterFactoryTable;
+extern dsp_factory_table<SDsp_factory> gInterpreterFactoryTable;
 
 template <class REAL, int TRACE>
 class interpreter_dsp_aux;
@@ -58,7 +58,6 @@ struct interpreter_dsp_factory_aux : public dsp_factory_imp {
 
     int fIntHeapSize;
     int fRealHeapSize;
-    int fSoundHeapSize;
     int fSROffset;
     int fCountOffset;
     int fIOTAOffset;
@@ -78,7 +77,7 @@ struct interpreter_dsp_factory_aux : public dsp_factory_imp {
 
     interpreter_dsp_factory_aux(const std::string& name, const std::string& compile_options, const std::string& sha_key,
                                 int version_num, int inputs, int outputs, int int_heap_size, int real_heap_size,
-                                int sound_heap_size, int sr_offset, int count_offset, int iota_offset, int opt_level,
+                                int sr_offset, int count_offset, int iota_offset, int opt_level,
                                 FIRMetaBlockInstruction* meta, FIRUserInterfaceBlockInstruction<REAL>* firinterface,
                                 FBCBlockInstruction<REAL>* static_init, FBCBlockInstruction<REAL>* init,
                                 FBCBlockInstruction<REAL>* resetui, FBCBlockInstruction<REAL>* clear,
@@ -89,7 +88,6 @@ struct interpreter_dsp_factory_aux : public dsp_factory_imp {
           fNumOutputs(outputs),
           fIntHeapSize(int_heap_size),
           fRealHeapSize(real_heap_size),
-          fSoundHeapSize(sound_heap_size),
           fSROffset(sr_offset),
           fCountOffset(count_offset),
           fIOTAOffset(iota_offset),
@@ -140,7 +138,7 @@ struct interpreter_dsp_factory_aux : public dsp_factory_imp {
             *out << "o " << fOptLevel << std::endl;
             *out << "i " << fNumInputs << " o " << fNumOutputs << std::endl;
 
-            *out << "i " << fIntHeapSize << " r " << fRealHeapSize << " s " << fSoundHeapSize << " s " << fSROffset
+            *out << "i " << fIntHeapSize << " r " << fRealHeapSize << " s " << fSROffset
                  << " c " << fCountOffset << " i " << fIOTAOffset << std::endl;
 
             *out << "m" << std::endl;
@@ -177,8 +175,8 @@ struct interpreter_dsp_factory_aux : public dsp_factory_imp {
 
             *out << "inputs " << fNumInputs << " outputs " << fNumOutputs << std::endl;
 
-            *out << "int_heap_size " << fIntHeapSize << " real_heap_size " << fRealHeapSize << " sound_heap_size "
-                 << fSoundHeapSize << " sr_offset " << fSROffset << " count_offset " << fCountOffset << " iota_offset "
+            *out << "int_heap_size " << fIntHeapSize << " real_heap_size " << fRealHeapSize << " sr_offset "
+                 << fSROffset << " count_offset " << fCountOffset << " iota_offset "
                  << fIOTAOffset << std::endl;
 
             *out << "meta_block" << std::endl;
@@ -447,12 +445,17 @@ struct interpreter_dsp_factory_aux : public dsp_factory_imp {
         }
     }
 
-    void metadata(Meta* meta) { ExecuteMeta(fMetaBlock, meta); }
-
-    void ExecuteMeta(FIRMetaBlockInstruction* block, Meta* meta)
+    void metadata(Meta* meta)
     {
-        for (const auto& it : block->fInstructions) {
+        for (const auto& it : fMetaBlock->fInstructions) {
             meta->declare(it->fKey.c_str(), it->fValue.c_str());
+        }
+    }
+    
+    void metadata(MetaGlue* meta)
+    {
+        for (const auto& it : fMetaBlock->fInstructions) {
+            meta->declare(meta->metaInterface, it->fKey.c_str(), it->fValue.c_str());
         }
     }
 
@@ -460,13 +463,14 @@ struct interpreter_dsp_factory_aux : public dsp_factory_imp {
 };
 
 struct interpreter_dsp_base : public dsp {
+    
     virtual ~interpreter_dsp_base() {}
 
     // Not implemented...
     void buildUserInterface(UI* ui_interface) {}
 
     // Replaced by this one
-    virtual void buildUserInterface(UITemplate* glue) = 0;
+    virtual void buildUserInterface(UIInterface* glue) = 0;
 
     virtual void instanceInit(int sample_rate) {}
 
@@ -475,6 +479,10 @@ struct interpreter_dsp_base : public dsp {
     virtual void instanceResetUserInterface() {}
 
     virtual void instanceClear() {}
+    
+    virtual void metadata(Meta* meta) {}
+    
+    virtual void metadata(MetaGlue* meta) {}
 
     // Not implemented...
     virtual void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs) {}
@@ -530,6 +538,8 @@ class interpreter_dsp_aux : public interpreter_dsp_base {
     }
 
     virtual void metadata(Meta* meta) { fFactory->metadata(meta); }
+    
+    virtual void metadata(MetaGlue* meta) { fFactory->metadata(meta); }
 
     virtual int getSampleRate() { return fFBCExecutor->getIntValue(fFactory->fSROffset); }
 
@@ -642,8 +652,8 @@ class interpreter_dsp_aux : public interpreter_dsp_base {
         // classInit is not called here since the tables are actually not shared between instances
         instanceInit(sample_rate);
     }
-
-    virtual void buildUserInterface(UITemplate* glue)
+    
+    virtual void buildUserInterface(UIInterface* glue)
     {
         try {
             fFBCExecutor->ExecuteBuildUserInterface(fFactory->fUserInterfaceBlock, glue);
@@ -822,7 +832,9 @@ class LIBFAUST_API interpreter_dsp : public dsp {
     int getNumOutputs();
 
     void buildUserInterface(UI* ui_interface);
-
+    
+    void buildUserInterface(UIGlue* glue);
+    
     int getSampleRate();
 
     void init(int sample_rate);
@@ -838,6 +850,8 @@ class LIBFAUST_API interpreter_dsp : public dsp {
     interpreter_dsp* clone();
 
     void metadata(Meta* meta);
+    
+    void metadata(MetaGlue* meta);
 
     void compute(int count, FAUSTFLOAT** inputs, FAUSTFLOAT** outputs);
 };
@@ -884,15 +898,43 @@ LIBFAUST_API std::vector<std::string> getInterpreterDSPFactoryLibraryList(interp
 LIBFAUST_API std::vector<std::string> getAllInterpreterDSPFactories();
 
 LIBFAUST_API interpreter_dsp_factory* readInterpreterDSPFactoryFromBitcode(const std::string& bitcode,
-                                                                           std::string&       error_msg);
+                                                                        std::string& error_msg);
 
 LIBFAUST_API std::string writeInterpreterDSPFactoryToBitcode(interpreter_dsp_factory* factory);
 
 LIBFAUST_API interpreter_dsp_factory* readInterpreterDSPFactoryFromBitcodeFile(const std::string& bitcode_path,
-                                                                               std::string&       error_msg);
+                                                                            std::string& error_msg);
 
 LIBFAUST_API bool writeInterpreterDSPFactoryToBitcodeFile(interpreter_dsp_factory* factory, const std::string& bitcode_path);
 
 LIBFAUST_API void deleteAllInterpreterDSPFactories();
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+// Public C interface
+
+LIBFAUST_API interpreter_dsp_factory* getCInterpreterDSPFactoryFromSHAKey(const char* sha_key);
+
+LIBFAUST_API bool deleteCInterpreterDSPFactory(interpreter_dsp_factory* factory);
+
+LIBFAUST_API const char** getCInterpreterDSPFactoryLibraryList(interpreter_dsp_factory* factory);
+
+LIBFAUST_API const char** getAllCInterpreterDSPFactories();
+
+LIBFAUST_API interpreter_dsp_factory* readCInterpreterDSPFactoryFromBitcode(const char* bitcode, char* error_msg);
+
+LIBFAUST_API char* writeCInterpreterDSPFactoryToBitcode(interpreter_dsp_factory* factory);
+
+LIBFAUST_API interpreter_dsp_factory* readCInterpreterDSPFactoryFromBitcodeFile(const char* bitcode_path, char* error_msg);
+
+LIBFAUST_API bool writeCInterpreterDSPFactoryToBitcodeFile(interpreter_dsp_factory* factory, const char* bitcode_path);
+
+LIBFAUST_API void deleteAllCInterpreterDSPFactories();
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -4,16 +4,16 @@
     Copyright (C) 2020 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -48,7 +48,7 @@ class FBCCompiler : public FBCInterpreter<REAL,0> {
         fCompiledBlocks = map;
 
         // FBC blocks compilation
-        //CompileBlock(factory->fComputeBlock);
+        CompileBlock(factory->fComputeBlock);
         CompileBlock(factory->fComputeDSPBlock);
     }
 
@@ -76,12 +76,12 @@ class FBCCompiler : public FBCInterpreter<REAL,0> {
         if (fCompiledBlocks->find(block) == fCompiledBlocks->end()) {
         #ifdef MIR_BUILD
             // Run with interp/MIR compiler
-            (*fCompiledBlocks)[block] = new FBCMIRCompiler<REAL>(block);
+            (*fCompiledBlocks)[block] = new FBCMIRCompiler<REAL>(block, this->fSoundTable);
         #elif LLVM_BUILD
             // Run with interp/LLVM compiler
-            (*fCompiledBlocks)[block] = new FBCLLVMCompiler<REAL>(block);
+            (*fCompiledBlocks)[block] = new FBCLLVMCompiler<REAL>(block, this->fSoundTable);
         #elif TEMPLATE_BUILD
-            (*fCompiledBlocks)[block] = new FBCTemplateCompiler<REAL>(block);
+            (*fCompiledBlocks)[block] = new FBCTemplateCompiler<REAL>(block, this->fSoundTable);
         #endif
         } else {
             // std::cout << "FBCCompiler: reuse compiled block" << std::endl;

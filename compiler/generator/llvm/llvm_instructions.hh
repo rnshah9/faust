@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -58,6 +58,9 @@ using namespace llvm;
 #define MakeIdx(beg, end) llvm::ArrayRef<LLVMValue>(beg, end)
 #define MakeArgs(args) llvm::ArrayRef<lLLVMValue>(args)
 #if LLVM_VERSION_MAJOR >= 14
+    #if LLVM_VERSION_MAJOR == 15
+    #error LLVM 15 not yet supported
+    #endif
 #define GetType(ptr) ptr->getType()->getScalarType()->getPointerElementType()
 #define MakeStructGEP(v1, v2) fBuilder->CreateStructGEP(GetType(v1), v1, v2);
 #define MyCreateLoad(var, is_volatile) fBuilder->CreateLoad(GetType(var), var, is_volatile)
@@ -140,8 +143,7 @@ struct LLVMTypeHelper {
 
         // void* must be defined as i8* type
         fTypeMap[Typed::kVoid_ptr]     = getInt8TyPtr();
-        fTypeMap[Typed::kVoid_ptr_ptr] = getTyPtr(fTypeMap[Typed::kVoid_ptr]);
-
+      
         // External structured type definition
         for (const auto& it : gGlobal->gExternalStructTypes) {
             LLVMType new_type                         = convertFIRType((it.second)->fType);
@@ -562,7 +564,7 @@ class LLVMInstVisitor : public InstVisitor, public LLVMTypeHelper {
         faustassert(named_address);  // One level indexation for now
 
         // Compute index, result is in fCurValue
-        indexed_address->fIndex->accept(this);
+        indexed_address->getIndex()->accept(this);
         Address::AccessType access = named_address->fAccess;
         string              name   = named_address->fName;
         LLVMValue           load_ptr;

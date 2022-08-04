@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -121,7 +121,7 @@ CodeContainer* WASMCodeContainer::createContainer(const string& name, int numInp
 
 DeclareFunInst* WASMCodeContainer::generateClassInit(const string& name)
 {
-    list<NamedTyped*> args;
+    Names args;
     args.push_back(InstBuilder::genNamedTyped("dsp", Typed::kObj_ptr));
     args.push_back(InstBuilder::genNamedTyped("sample_rate", Typed::kInt32));
 
@@ -136,7 +136,7 @@ DeclareFunInst* WASMCodeContainer::generateClassInit(const string& name)
 DeclareFunInst* WASMCodeContainer::generateInstanceClear(const string& name, const string& obj, bool ismethod,
                                                          bool isvirtual)
 {
-    list<NamedTyped*> args;
+    Names args;
     if (!ismethod) {
         args.push_back(InstBuilder::genNamedTyped(obj, Typed::kObj_ptr));
     }
@@ -153,7 +153,7 @@ DeclareFunInst* WASMCodeContainer::generateInstanceClear(const string& name, con
 DeclareFunInst* WASMCodeContainer::generateInstanceConstants(const string& name, const string& obj, bool ismethod,
                                                              bool isvirtual)
 {
-    list<NamedTyped*> args;
+    Names args;
     if (!ismethod) {
         args.push_back(InstBuilder::genNamedTyped(obj, Typed::kObj_ptr));
     }
@@ -170,7 +170,7 @@ DeclareFunInst* WASMCodeContainer::generateInstanceConstants(const string& name,
 DeclareFunInst* WASMCodeContainer::generateInstanceResetUserInterface(const string& name, const string& obj,
                                                                       bool ismethod, bool isvirtual)
 {
-    list<NamedTyped*> args;
+    Names args;
     if (!ismethod) {
         args.push_back(InstBuilder::genNamedTyped(obj, Typed::kObj_ptr));
     }
@@ -196,7 +196,7 @@ WASMScalarCodeContainer::WASMScalarCodeContainer(const string& name, int numInpu
 DeclareFunInst* WASMCodeContainer::generateInstanceInitFun(const string& name, const string& obj, bool ismethod,
                                                            bool isvirtual)
 {
-    list<NamedTyped*> args;
+    Names args;
     if (!ismethod) {
         args.push_back(InstBuilder::genNamedTyped(obj, Typed::kObj_ptr));
     }
@@ -431,7 +431,7 @@ void WASMCodeContainer::generateComputeAux(BlockInst* compute_block)
     block = CastRemover().getCode(block);
     
     // Creates function and visit it
-    list<NamedTyped*> args;
+    Names args;
     args.push_back(InstBuilder::genNamedTyped("dsp", Typed::kObj_ptr));
     args.push_back(InstBuilder::genNamedTyped("count", Typed::kInt32));
     args.push_back(InstBuilder::genNamedTyped("inputs", Typed::kVoid_ptr));

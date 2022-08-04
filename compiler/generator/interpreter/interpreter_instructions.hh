@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -42,7 +42,7 @@ struct InterpreterInstVisitor : public DispatchVisitor {
 
     int  fRealHeapOffset;   // Offset in Real HEAP
     int  fIntHeapOffset;    // Offset in Integer HEAP
-    int  fSoundHeapOffset;  // Offset in Sound HEAP
+    
     bool fCommute;          // Whether to try commutative operation reverse order generation
 
     std::map<std::string, MemoryDesc> fFieldTable;  // Table : field_name, { offset, size, type }
@@ -56,7 +56,6 @@ struct InterpreterInstVisitor : public DispatchVisitor {
         fCurrentBlock       = new FBCBlockInstruction<REAL>();
         fRealHeapOffset     = 0;
         fIntHeapOffset      = 0;
-        fSoundHeapOffset    = 0;
         fCommute            = true;
         initMathTable();
     }
@@ -241,12 +240,9 @@ struct InterpreterInstVisitor : public DispatchVisitor {
 
     virtual void visit(AddSoundfileInst* inst)
     {
-        // Not supported for now
-        throw faustexception("ERROR : 'soundfile' primitive not yet supported for interp\n");
-
         MemoryDesc tmp = fFieldTable[inst->fSFZone];
         fUserInterfaceBlock->push(
-            new FIRUserInterfaceInstruction<REAL>(FBCInstruction::kAddSoundfile, tmp.fOffset, inst->fLabel, inst->fURL));
+            new FIRUserInterfaceInstruction<REAL>(FBCInstruction::kAddSoundfile, inst->fSFZone, inst->fLabel, inst->fURL));
     }
 
     virtual void visit(LabelInst* inst) {}
@@ -281,9 +277,6 @@ struct InterpreterInstVisitor : public DispatchVisitor {
             if (inst->fType->getType() == Typed::kInt32) {
                 fFieldTable[name] = MemoryDesc(-1, fIntHeapOffset, 1, inst->fType->getSizeBytes(), inst->fType->getType());
                 fIntHeapOffset++;
-            } else if (inst->fType->getType() == Typed::kSound_ptr) {
-                fFieldTable[name] = MemoryDesc(-1, fSoundHeapOffset, 1, inst->fType->getSizeBytes(), inst->fType->getType());
-                fSoundHeapOffset++;
             } else {
                 fFieldTable[name] = MemoryDesc(-1, fRealHeapOffset, 1, inst->fType->getSizeBytes(), inst->fType->getType());
                 fRealHeapOffset++;
@@ -317,10 +310,6 @@ struct InterpreterInstVisitor : public DispatchVisitor {
                     fCurrentBlock->push(
                         new FBCBasicInstruction<REAL>(FBCInstruction::kLoadInt, named->getName(), 0, 0, tmp.fOffset, 0));
                     break;
-                case Typed::kSound_ptr:
-                    fCurrentBlock->push(
-                        new FBCBasicInstruction<REAL>(FBCInstruction::kLoadSound, named->getName(), 0, 0, tmp.fOffset, 0));
-                    break;
                 default:
                     fCurrentBlock->push(
                         new FBCBasicInstruction<REAL>(FBCInstruction::kLoadReal, named->getName(), 0, 0, tmp.fOffset, 0));
@@ -339,9 +328,13 @@ struct InterpreterInstVisitor : public DispatchVisitor {
             } else {
                 DeclareStructTypeInst* struct_type = isStructType(indexed->getName());
                 if (struct_type) {
-                    Int32NumInst* field_index = static_cast<Int32NumInst*>(indexed->fIndex);
-                    fCurrentBlock->push(
-                        new FBCBasicInstruction<REAL>(FBCInstruction::kLoadSoundField, 0, 0, field_index->fNum, 0));
+                    std::vector<ValueInst*> indices = indexed->getIndices();
+                    // Field_index is last in the indices vector
+                    Int32NumInst* num = static_cast<Int32NumInst*>(indices.back());
+                    FBCInstruction::Opcode op = (num->fNum == Soundfile::kBuffers)
+                        ? FBCInstruction::kLoadSoundFieldReal
+                        : FBCInstruction::kLoadSoundFieldInt;
+                    fCurrentBlock->push(new FBCBasicInstruction<REAL>(op, indexed->getName()));
                 } else {
                     MemoryDesc tmp = fFieldTable[indexed->getName()];
                     faustassert(tmp.fOffset >= 0);
@@ -410,10 +403,6 @@ struct InterpreterInstVisitor : public DispatchVisitor {
                 switch (tmp.fType) {
                     case Typed::kInt32:
                         fCurrentBlock->push(new FBCBasicInstruction<REAL>(FBCInstruction::kStoreInt, named->getName(), 0,
-                                                                          0, tmp.fOffset, 0));
-                        break;
-                    case Typed::kSound_ptr:
-                        fCurrentBlock->push(new FBCBasicInstruction<REAL>(FBCInstruction::kStoreSound, named->getName(), 0,
                                                                           0, tmp.fOffset, 0));
                         break;
                     default:

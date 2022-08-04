@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -78,7 +78,7 @@ class MinPrim : public xtended {
         }
     }
 
-    virtual ValueInst* generateCode(CodeContainer* container, list<ValueInst*>& args, ::Type result,
+    virtual ValueInst* generateCode(CodeContainer* container, Values& args, ::Type result,
                                     vector<::Type> const& types)
     {
         faustassert(args.size() == arity());
@@ -104,7 +104,7 @@ class MinPrim : public xtended {
     
         Typed::VarType         result_type = (result->nature() == kInt) ? Typed::kInt32 : itfloat();
         vector<Typed::VarType> arg_types;
-        list<ValueInst*>       casted_args;
+        Values       casted_args;
 
         // generates code compatible with overloaded min
         int n0 = types[0]->nature();
@@ -120,7 +120,7 @@ class MinPrim : public xtended {
             } else {
                 faustassert(n1 == kInt);  // second argument is not float, cast it to float
                 // prepare args values
-                ListValuesIt it2 = args.begin();
+                ValuesIt it2 = args.begin();
                 casted_args.push_back((*it2));
                 it2++;
                 casted_args.push_back(InstBuilder::genCastFloatInst(*it2));
@@ -134,7 +134,7 @@ class MinPrim : public xtended {
             arg_types.push_back(itfloat());
 
             // prepare args values
-            ListValuesIt it2 = args.begin();
+            ValuesIt it2 = args.begin();
             casted_args.push_back(InstBuilder::genCastFloatInst(*it2));
             it2++;
             casted_args.push_back((*it2));
@@ -156,7 +156,7 @@ class MinPrim : public xtended {
                 } else {
                     faustassert(b1 == kBool);  // second is boolean, cast to int
                     // prepare args values
-                    ListValuesIt it2 = args.begin();
+                    ValuesIt it2 = args.begin();
                     casted_args.push_back((*it2));
                     it2++;
                     casted_args.push_back(InstBuilder::genCastInt32Inst(*it2));
@@ -165,7 +165,7 @@ class MinPrim : public xtended {
             } else if (b1 == kNum) {
                 faustassert(b0 == kBool);  // first is boolean, cast to int
                 // prepare args values
-                ListValuesIt it2 = args.begin();
+                ValuesIt it2 = args.begin();
                 casted_args.push_back(InstBuilder::genCastInt32Inst(*it2));
                 it2++;
                 casted_args.push_back((*it2));
@@ -175,7 +175,7 @@ class MinPrim : public xtended {
                 // '1' and 'false' is actually '0' (which is not the case if compiled in SSE mode)
                 faustassert(b0 == kBool);
                 faustassert(b1 == kBool);  // both are booleans, cast both
-                ListValuesIt it2 = args.begin();
+                ValuesIt it2 = args.begin();
                 casted_args.push_back(InstBuilder::genCastInt32Inst(*it2));
                 it2++;
                 casted_args.push_back(InstBuilder::genCastInt32Inst(*it2));

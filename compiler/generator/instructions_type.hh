@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -83,7 +83,6 @@ struct Typed : public Printable {
         kFixedPoint_vec_ptr,
         kVoid,
         kVoid_ptr,
-        kVoid_ptr_ptr,
         kObj,
         kObj_ptr,
         kSound,
@@ -137,8 +136,6 @@ struct Typed : public Printable {
                 return kBool_vec_ptr;
             case kVoid:
                 return kVoid_ptr;
-            case kVoid_ptr:
-                return kVoid_ptr_ptr;
             case kSound:
                 return kSound_ptr;
             default:
@@ -215,8 +212,6 @@ struct Typed : public Printable {
                 return kBool_vec;
             case kVoid_ptr:
                 return kVoid;
-            case kVoid_ptr_ptr:
-                return kVoid_ptr;
             case kSound_ptr:
                 return kSound;
             default:

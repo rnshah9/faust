@@ -4,16 +4,16 @@
     Copyright (C) 2003-2018 GRAME, Centre National de Creation Musicale
     ---------------------------------------------------------------------
     This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or
+    it under the terms of the GNU Lesser General Public License as published by
+    the Free Software Foundation; either version 2.1 of the License, or
     (at your option) any later version.
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+    GNU Lesser General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
+    You should have received a copy of the GNU Lesser General Public License
     along with this program; if not, write to the Free Software
     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  ************************************************************************
@@ -27,6 +27,10 @@ using namespace std;
 #include "text_instructions.hh"
 #include "type_manager.hh"
 #include "struct_manager.hh"
+
+/**
+ * Implement C++ FIR visitor.
+ */
 
 class CPPInstVisitor : public TextInstVisitor {
    private:
@@ -487,7 +491,10 @@ class CPPInstVisitor : public TextInstVisitor {
     static void cleanup() { gFunctionSymbolTable.clear(); }
 };
 
-// Used for -os1 mode (TODO : does not work with 'soundfile')
+/**
+ Implement C++ FIR visitor: used for -os1 mode (TODO : does not work with 'soundfile').
+*/
+
 class CPPInstVisitor1 : public CPPInstVisitor {
     
     private:
@@ -543,10 +550,10 @@ class CPPInstVisitor1 : public CPPInstVisitor {
             
             if (fStructVisitor.hasField(name, type)) {
                 if (type == Typed::kInt32) {
-                    FIRIndex value = FIRIndex(indexed->fIndex) + fStructVisitor.getFieldIntOffset(name)/sizeof(int);
+                    FIRIndex value = FIRIndex(indexed->getIndex()) + fStructVisitor.getFieldIntOffset(name)/sizeof(int);
                     InstBuilder::genLoadArrayFunArgsVar("iZone", value)->accept(this);
                 } else {
-                    FIRIndex value = FIRIndex(indexed->fIndex) + fStructVisitor.getFieldRealOffset(name)/ifloatsize();
+                    FIRIndex value = FIRIndex(indexed->getIndex()) + fStructVisitor.getFieldRealOffset(name)/ifloatsize();
                     InstBuilder::genLoadArrayFunArgsVar("fZone", value)->accept(this);
                 }
             } else {
@@ -560,7 +567,10 @@ class CPPInstVisitor1 : public CPPInstVisitor {
     
 };
 
-// Used for -os2 mode, accessing iZone/fZone as function args (TODO : does not work with 'soundfile')
+/**
+ Implement C++ FIR visitor: Used for -os2 mode, accessing iZone/fZone as function args (TODO : does not work with 'soundfile').
+ */
+
 class CPPInstVisitor2 : public CPPInstVisitor {
     
     protected:
@@ -596,10 +606,10 @@ class CPPInstVisitor2 : public CPPInstVisitor {
             
             if (fStructVisitor.hasField(name, type) && fStructVisitor.getFieldMemoryType(name) == MemoryDesc::kExternal) {
                 if (type == Typed::kInt32) {
-                    FIRIndex value = FIRIndex(indexed->fIndex) + fStructVisitor.getFieldIntOffset(name)/sizeof(int);
+                    FIRIndex value = FIRIndex(indexed->getIndex()) + fStructVisitor.getFieldIntOffset(name)/sizeof(int);
                     InstBuilder::genLoadArrayFunArgsVar("iZone", value)->accept(this);
                 } else {
-                    FIRIndex value = FIRIndex(indexed->fIndex) + fStructVisitor.getFieldRealOffset(name)/ifloatsize();
+                    FIRIndex value = FIRIndex(indexed->getIndex()) + fStructVisitor.getFieldRealOffset(name)/ifloatsize();
                     InstBuilder::genLoadArrayFunArgsVar("fZone", value)->accept(this);
                 }
             } else {
@@ -613,7 +623,10 @@ class CPPInstVisitor2 : public CPPInstVisitor {
     
 };
 
-// Used for -os3 mode, accessing iZone/fZone in DSP struct (TODO : does not work with 'soundfile')
+/**
+ Implement C++ FIR visitor: used for -os3 mode, accessing iZone/fZone in DSP struct (TODO : does not work with 'soundfile').
+ */
+
 class CPPInstVisitor3 : public CPPInstVisitor2 {
     
     public:
@@ -629,10 +642,10 @@ class CPPInstVisitor3 : public CPPInstVisitor2 {
             
             if (fStructVisitor.hasField(name, type) && fStructVisitor.getFieldMemoryType(name) == MemoryDesc::kExternal) {
                 if (type == Typed::kInt32) {
-                    FIRIndex value = FIRIndex(indexed->fIndex) + fStructVisitor.getFieldIntOffset(name)/sizeof(int);
+                    FIRIndex value = FIRIndex(indexed->getIndex()) + fStructVisitor.getFieldIntOffset(name)/sizeof(int);
                     InstBuilder::genLoadArrayStructVar("iZone", value)->accept(this);
                 } else {
-                    FIRIndex value = FIRIndex(indexed->fIndex) + fStructVisitor.getFieldRealOffset(name)/ifloatsize();
+                    FIRIndex value = FIRIndex(indexed->getIndex()) + fStructVisitor.getFieldRealOffset(name)/ifloatsize();
                     InstBuilder::genLoadArrayStructVar("fZone", value)->accept(this);
                 }
             } else {
