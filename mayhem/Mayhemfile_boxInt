@@ -1,0 +1,6 @@
+project: faust
+target: boxint
+
+cmds:
+  - cmd: /fuzz_boxInt
+    libfuzzer: true
